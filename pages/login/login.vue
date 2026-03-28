@@ -2,7 +2,7 @@
   <view class="container">
     <view class="login-box">
       <view class="title">个人健康管理</view>
-      <view class="subtitle">登录后开始记录你的健康数据</view>
+      <view class="subtitle">{{ isRegisterMode ? '先注册账号再开始管理健康' : '登录后开始记录你的健康数据' }}</view>
 
       <input
         class="input"
@@ -12,24 +12,49 @@
 
       <input
         class="input"
-        v-model="form.password"
-        type="password"
-        placeholder="请输入密码"
+        v-model="form.nickname"
+        v-if="isRegisterMode"
+        placeholder="请输入昵称（可选）"
       />
 
-      <button class="btn" @click="handleLogin">登录</button>
+      <input
+        class="input"
+        v-model="form.password"
+        type="password"
+        placeholder="请输入密码（至少6位）"
+      />
+
+      <input
+        class="input"
+        v-model="form.confirmPassword"
+        v-if="isRegisterMode"
+        type="password"
+        placeholder="请再次输入密码"
+      />
+
+      <button class="btn" @click="isRegisterMode ? handleRegister() : handleLogin()">
+        {{ isRegisterMode ? '注册' : '登录' }}
+      </button>
+
+      <view class="switch-mode" @click="isRegisterMode = !isRegisterMode">
+        {{ isRegisterMode ? '已有账号？去登录' : '还没有账号？去注册' }}
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import { loginApi, getProfileApi } from '@/api/user'
+import { reactive, ref } from 'vue'
+import { loginApi, registerApi, getProfileApi } from '@/api/user'
 import { setToken, setUserInfo } from '@/utils/auth'
+
+const isRegisterMode = ref(false)
 
 const form = reactive({
   username: 'test',
-  password: '123456'
+  nickname: '',
+  password: '123456',
+  confirmPassword: ''
 })
 
 const handleLogin = async () => {
@@ -42,7 +67,10 @@ const handleLogin = async () => {
   }
 
   try {
-    const res = await loginApi(form)
+    const res = await loginApi({
+      username: form.username,
+      password: form.password
+    })
 
     if (res.code === 200) {
       setToken(res.data.token)
@@ -72,6 +100,60 @@ const handleLogin = async () => {
     console.error('登录异常：', e)
     uni.showToast({
       title: '登录异常',
+      icon: 'none'
+    })
+  }
+}
+
+const handleRegister = async () => {
+  if (!form.username || !form.password) {
+    uni.showToast({
+      title: '请输入用户名和密码',
+      icon: 'none'
+    })
+    return
+  }
+
+  if (form.password.length < 6) {
+    uni.showToast({
+      title: '密码至少6位',
+      icon: 'none'
+    })
+    return
+  }
+
+  if (form.password !== form.confirmPassword) {
+    uni.showToast({
+      title: '两次密码输入不一致',
+      icon: 'none'
+    })
+    return
+  }
+
+  try {
+    const res = await registerApi({
+      username: form.username,
+      password: form.password,
+      nickname: form.nickname
+    })
+
+    if (res.code === 200) {
+      uni.showToast({
+        title: '注册成功，请登录',
+        icon: 'success'
+      })
+      isRegisterMode.value = false
+      form.confirmPassword = ''
+    } else {
+      uni.showToast({
+        title: res.message || '注册失败',
+        icon: 'none'
+      })
+    }
+  } catch (e) {
+    console.error('注册异常：', e)
+    uni.showToast({
+      title: '注册异常',
       icon: 'none'
     })
   }
@@ -123,5 +205,12 @@ const handleLogin = async () => {
   background: #3c9cff;
   color: #fff;
   border-radius: 12rpx;
+}
+
+.switch-mode {
+  text-align: center;
+  color: #3c9cff;
+  margin-top: 24rpx;
+  font-size: 26rpx;
 }
 </style>
