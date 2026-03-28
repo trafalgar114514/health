@@ -112,7 +112,7 @@ const submitRecord = async () => {
       })
       resetForm()
       uni.navigateTo({
-        url: '/pages/trend/trend'
+        url: '/pages/health/list'
       })
     } else {
       uni.showToast({
