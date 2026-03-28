@@ -8,6 +8,14 @@ export function loginApi(data) {
   })
 }
 
+export function registerApi(data) {
+  return request({
+    url: '/user/register',
+    method: 'POST',
+    data
+  })
+}
+
 export function getProfileApi() {
   return request({
     url: '/user/profile',
