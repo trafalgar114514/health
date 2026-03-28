@@ -5,15 +5,15 @@
     <view class="card" v-for="item in list" :key="item.id">
       <view class="row">
         <text class="type">{{ item.type }}</text>
-        <text class="value">{{ item.value }}{{ item.unit || '' }}</text>
+        <text class="value">{{ formatValue(item) }}</text>
       </view>
 
       <view class="date">
         {{ item.recordDate }}
       </view>
 
-      <view class="remark" v-if="item.remark">
-        {{ item.remark }}
+      <view class="remark" v-if="formatRemark(item)">
+        {{ formatRemark(item) }}
       </view>
     </view>
 
@@ -53,6 +53,27 @@ const loadList = async () => {
 
 const goBack = () => {
   uni.navigateBack()
+}
+
+const formatValue = (item) => {
+  if (item.type !== '血压') {
+    return `${item.value}${item.unit || ''}`
+  }
+
+  const match = (item.remark || '').match(/血压舒张压:(\d+(?:\.\d+)?)mmHg/)
+  if (match) {
+    return `${item.value}/${match[1]}${item.unit || ''}`
+  }
+  return `${item.value}${item.unit || ''}`
+}
+
+const formatRemark = (item) => {
+  if (item.type !== '血压') {
+    return item.remark || ''
+  }
+
+  const rawRemark = item.remark || ''
+  return rawRemark.replace(/^血压舒张压:\d+(?:\.\d+)?mmHg；?/, '')
 }
 
 onMounted(() => {

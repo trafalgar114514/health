@@ -2,10 +2,25 @@
   <view class="container">
     <view class="title">健康录入</view>
 
-    <input v-model="form.type" class="input" placeholder="请输入类型，如体重/血压" />
-    <input v-model="form.value" class="input" placeholder="请输入数值" type="digit" />
-    <input v-model="form.unit" class="input" placeholder="请输入单位，如kg/mmHg" />
-    <input v-model="form.recordDate" class="input" placeholder="请输入日期，如2026-03-28" />
+    <picker class="picker" :range="typeOptions" :value="typeIndex" @change="handleTypeChange">
+      <view class="picker-value" :class="{ placeholder: !form.type }">
+        {{ form.type || '请选择类型' }}
+      </view>
+    </picker>
+    <template v-if="form.type === '血压'">
+      <view class="bp-row">
+        <input v-model="form.systolic" class="input bp-input" placeholder="收缩压" type="digit" />
+        <text class="slash">/</text>
+        <input v-model="form.diastolic" class="input bp-input" placeholder="舒张压" type="digit" />
+      </view>
+    </template>
+    <input v-else v-model="form.value" class="input" placeholder="请输入数值" type="digit" />
+    <input v-model="form.unit" class="input" placeholder="单位将自动选择" disabled />
+    <picker mode="date" :value="form.recordDate" :end="today" @change="handleDateChange">
+      <view class="picker-value" :class="{ placeholder: !form.recordDate }">
+        {{ form.recordDate || '请选择日期' }}
+      </view>
+    </picker>
     <input v-model="form.remark" class="input" placeholder="备注" />
 
     <button class="btn" @click="handleSubmit">提交</button>
@@ -13,19 +28,51 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import request from '@/utils/request'
 
 const userInfo = uni.getStorageSync('userInfo') || {}
+const typeOptions = ['身高', '体重', '血压']
+const unitMap = {
+  身高: 'cm',
+  体重: 'kg',
+  血压: 'mmHg'
+}
 
 const form = reactive({
   userId: userInfo.id || '',
   type: '',
   value: '',
+  systolic: '',
+  diastolic: '',
   unit: '',
   recordDate: '',
   remark: ''
 })
+
+const getToday = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = `${now.getMonth() + 1}`.padStart(2, '0')
+  const day = `${now.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const today = getToday()
+const typeIndex = computed(() => typeOptions.findIndex((item) => item === form.type))
+
+const handleTypeChange = (e) => {
+  const index = Number(e.detail.value)
+  form.type = typeOptions[index]
+  form.unit = unitMap[form.type] || ''
+  form.value = ''
+  form.systolic = ''
+  form.diastolic = ''
+}
+
+const handleDateChange = (e) => {
+  form.recordDate = e.detail.value
+}
 
 const handleSubmit = async () => {
   if (!form.userId) {
@@ -36,7 +83,11 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!form.type || !form.value || !form.recordDate) {
+  const isBp = form.type === '血压'
+  const isNormalTypeValid = !isBp && form.value
+  const isBpValid = isBp && form.systolic && form.diastolic
+
+  if (!form.type || !(isNormalTypeValid || isBpValid) || !form.recordDate) {
     uni.showToast({
       title: '请填写完整信息',
       icon: 'none'
@@ -45,16 +96,20 @@ const handleSubmit = async () => {
   }
 
   try {
+    const bpRemark = isBp
+      ? `血压舒张压:${form.diastolic}mmHg${form.remark ? `；${form.remark}` : ''}`
+      : form.remark
+
     const res = await request({
       url: '/health/add',
       method: 'POST',
       data: {
         userId: form.userId,
         type: form.type,
-        value: Number(form.value),
-        unit: form.unit,
+        value: Number(isBp ? form.systolic : form.value),
+        unit: unitMap[form.type] || form.unit,
         recordDate: form.recordDate,
-        remark: form.remark
+        remark: bpRemark
       }
     })
 
@@ -66,6 +121,8 @@ const handleSubmit = async () => {
 
       form.type = ''
       form.value = ''
+      form.systolic = ''
+      form.diastolic = ''
       form.unit = ''
       form.recordDate = ''
       form.remark = ''
@@ -99,6 +156,42 @@ const handleSubmit = async () => {
   margin-bottom: 20rpx;
   background: #fff;
   box-sizing: border-box;
+}
+
+.bp-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.bp-input {
+  flex: 1;
+}
+
+.slash {
+  font-size: 34rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.picker {
+  margin-bottom: 20rpx;
+}
+
+.picker-value {
+  height: 80rpx;
+  border: 1px solid #ddd;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  background: #fff;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  color: #333;
+}
+
+.placeholder {
+  color: #999;
 }
 
 .btn {
