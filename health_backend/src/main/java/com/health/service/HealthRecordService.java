@@ -26,17 +26,7 @@ public class HealthRecordService {
         record.setRecordDate(LocalDate.parse(dto.getRecordDate()));
         record.setRemark(dto.getRemark());
 
-        HealthRecord oldRecord = healthRecordMapper.selectOneByUserIdAndTypeAndDate(
-                record.getUserId(),
-                record.getType(),
-                record.getRecordDate()
-        );
-
-        if (oldRecord != null) {
-            healthRecordMapper.updateByUserIdAndTypeAndDate(record);
-        } else {
-            healthRecordMapper.insert(record);
-        }
+        healthRecordMapper.insert(record);
     }
 
     public List<Map<String, Object>> getTrend(Long userId, String type) {
