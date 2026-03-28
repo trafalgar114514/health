@@ -12,6 +12,7 @@
       <input
         class="input"
         v-model="form.value"
+        type="digit"
         placeholder="请输入记录值，例如 65.5"
       />
 
@@ -41,6 +42,7 @@
 <script setup>
 import { reactive } from 'vue'
 import { addHealthRecordApi } from '@/api/health'
+import { getUserInfo } from '@/utils/auth'
 import { formatDate } from '@/utils/common'
 
 const typeOptions = ['体重', '血压', '血糖', '睡眠', '心率', '运动']
@@ -48,15 +50,19 @@ const typeOptions = ['体重', '血压', '血糖', '睡眠', '心率', '运动']
 const today = formatDate()
 
 const form = reactive({
-  type: '',
+  type: '体重',
   value: '',
-  unit: '',
+  unit: 'kg',
   recordDate: formatDate(),
   remark: ''
 })
 
 const handleTypeChange = (e) => {
-  form.type = typeOptions[e.detail.value]
+  const selectedType = typeOptions[e.detail.value]
+  form.type = selectedType
+  if (selectedType === '体重' && !form.unit) {
+    form.unit = 'kg'
+  }
 }
 
 const handleDateChange = (e) => {
@@ -64,9 +70,9 @@ const handleDateChange = (e) => {
 }
 
 const resetForm = () => {
-  form.type = ''
+  form.type = '体重'
   form.value = ''
-  form.unit = ''
+  form.unit = 'kg'
   form.recordDate = formatDate()
   form.remark = ''
 }
@@ -80,9 +86,18 @@ const submitRecord = async () => {
     return
   }
 
+  const userInfo = getUserInfo()
+  if (!userInfo?.id) {
+    uni.showToast({
+      title: '请先登录后再提交',
+      icon: 'none'
+    })
+    return
+  }
+
   try {
     const res = await addHealthRecordApi({
-      userId: 1,
+      userId: userInfo.id,
       type: form.type,
       value: form.value,
       unit: form.unit,
