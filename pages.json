@@ -1,0 +1,78 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^qiun-data-charts$": "@/uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/health/record",
+      "style": {
+        "navigationBarTitleText": "健康录入"
+      }
+    },
+	{
+	  "path": "pages/health/list",
+	  "style": {
+	    "navigationBarTitleText": "健康记录"
+	  }
+	},
+    {
+      "path": "pages/trend/trend",
+      "style": {
+        "navigationBarTitleText": "健康趋势分析"
+      }
+    },
+    {
+      "path": "pages/risk/risk",
+      "style": {
+        "navigationBarTitleText": "健康风险评估"
+      }
+    },
+    {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#3c9cff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/health/record",
+        "text": "录入"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "健康管理",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f7fa"
+  }
+}
