@@ -1,6 +1,13 @@
 <template>
   <view class="container">
+    <view v-if="loading" class="state">加载中...</view>
+
+    <view v-else-if="list.length === 0" class="state empty">
+      暂无健康记录，先去录入一条吧
+    </view>
+
     <view
+      v-else
       class="card"
       v-for="item in list"
       :key="item.id"
@@ -22,21 +29,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getHealthListApi } from '@/api/health'
+import { getUserInfo } from '@/utils/auth'
 
 const list = ref([])
+const loading = ref(false)
 
 const loadList = async () => {
+  const userInfo = getUserInfo() || {}
+  const userId = userInfo.id || 1
+
+  loading.value = true
   try {
-    const res = await getHealthListApi(1)
-    list.value = res
+    const res = await getHealthListApi(userId)
+    list.value = Array.isArray(res) ? res : []
   } catch (e) {
+    list.value = []
+    uni.showToast({
+      title: '加载健康记录失败',
+      icon: 'none'
+    })
     console.log('加载健康记录失败', e)
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(() => {
+onShow(() => {
   loadList()
 })
 </script>
@@ -76,5 +97,16 @@ onMounted(() => {
 .remark {
   margin-top: 10rpx;
   font-size: 26rpx;
+}
+
+.state {
+  margin-top: 120rpx;
+  text-align: center;
+  color: #666;
+  font-size: 28rpx;
+}
+
+.empty {
+  color: #999;
 }
 </style>

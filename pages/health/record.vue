@@ -96,8 +96,8 @@ const submitRecord = async () => {
         icon: 'success'
       })
       resetForm()
-	  uni.navigateTo({
-	    url: '/pages/trend/trend'
+      uni.navigateTo({
+        url: '/pages/health/list'
       })
     } else {
       uni.showToast({
