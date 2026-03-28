@@ -60,21 +60,13 @@ const formatValue = (item) => {
     return `${item.value}${item.unit || ''}`
   }
 
-  const match = (item.remark || '').match(/血压舒张压:(\d+(?:\.\d+)?)mmHg/)
-  if (match) {
-    return `${item.value}/${match[1]}${item.unit || ''}`
+  if (item.systolic !== null && item.systolic !== undefined && item.diastolic !== null && item.diastolic !== undefined) {
+    return `${item.systolic}/${item.diastolic}${item.unit || ''}`
   }
   return `${item.value}${item.unit || ''}`
 }
 
-const formatRemark = (item) => {
-  if (item.type !== '血压') {
-    return item.remark || ''
-  }
-
-  const rawRemark = item.remark || ''
-  return rawRemark.replace(/^血压舒张压:\d+(?:\.\d+)?mmHg；?/, '')
-}
+const formatRemark = (item) => item.remark || ''
 
 onMounted(() => {
   loadList()

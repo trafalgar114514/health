@@ -96,10 +96,6 @@ const handleSubmit = async () => {
   }
 
   try {
-    const bpRemark = isBp
-      ? `血压舒张压:${form.diastolic}mmHg${form.remark ? `；${form.remark}` : ''}`
-      : form.remark
-
     const res = await request({
       url: '/health/add',
       method: 'POST',
@@ -107,9 +103,11 @@ const handleSubmit = async () => {
         userId: form.userId,
         type: form.type,
         value: Number(isBp ? form.systolic : form.value),
+        systolic: isBp ? Number(form.systolic) : null,
+        diastolic: isBp ? Number(form.diastolic) : null,
         unit: unitMap[form.type] || form.unit,
         recordDate: form.recordDate,
-        remark: bpRemark
+        remark: form.remark
       }
     })
 
