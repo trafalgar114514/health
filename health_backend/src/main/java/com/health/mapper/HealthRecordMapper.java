@@ -14,11 +14,11 @@ public interface HealthRecordMapper {
                                                  @Param("type") String type,
                                                  @Param("recordDate") java.time.LocalDate recordDate);
 
-    @Insert("insert into health_record(user_id,type,value,unit,record_date,remark) " +
-            "values(#{userId},#{type},#{value},#{unit},#{recordDate},#{remark})")
+    @Insert("insert into health_record(user_id,type,value,systolic,diastolic,unit,record_date,remark) " +
+            "values(#{userId},#{type},#{value},#{systolic},#{diastolic},#{unit},#{recordDate},#{remark})")
     int insert(HealthRecord record);
 
-    @Update("update health_record set value=#{value}, unit=#{unit}, remark=#{remark} " +
+    @Update("update health_record set value=#{value}, systolic=#{systolic}, diastolic=#{diastolic}, unit=#{unit}, remark=#{remark} " +
             "where user_id=#{userId} and type=#{type} and record_date=#{recordDate}")
     int updateByUserIdAndTypeAndDate(HealthRecord record);
 

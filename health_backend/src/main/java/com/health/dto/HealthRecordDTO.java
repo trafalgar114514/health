@@ -4,6 +4,8 @@ public class HealthRecordDTO {
     private Long userId;
     private String type;
     private Double value;
+    private Double systolic;
+    private Double diastolic;
     private String unit;
     private String recordDate;
     private String remark;
@@ -30,6 +32,22 @@ public class HealthRecordDTO {
 
     public void setValue(Double value) {
         this.value = value;
+    }
+
+    public Double getSystolic() {
+        return systolic;
+    }
+
+    public void setSystolic(Double systolic) {
+        this.systolic = systolic;
+    }
+
+    public Double getDiastolic() {
+        return diastolic;
+    }
+
+    public void setDiastolic(Double diastolic) {
+        this.diastolic = diastolic;
     }
 
     public String getUnit() {

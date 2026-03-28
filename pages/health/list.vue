@@ -5,15 +5,15 @@
     <view class="card" v-for="item in list" :key="item.id">
       <view class="row">
         <text class="type">{{ item.type }}</text>
-        <text class="value">{{ item.value }}{{ item.unit || '' }}</text>
+        <text class="value">{{ formatValue(item) }}</text>
       </view>
 
       <view class="date">
         {{ item.recordDate }}
       </view>
 
-      <view class="remark" v-if="item.remark">
-        {{ item.remark }}
+      <view class="remark" v-if="formatRemark(item)">
+        {{ formatRemark(item) }}
       </view>
     </view>
 
@@ -54,6 +54,19 @@ const loadList = async () => {
 const goBack = () => {
   uni.navigateBack()
 }
+
+const formatValue = (item) => {
+  if (item.type !== '血压') {
+    return `${item.value}${item.unit || ''}`
+  }
+
+  if (item.systolic !== null && item.systolic !== undefined && item.diastolic !== null && item.diastolic !== undefined) {
+    return `${item.systolic}/${item.diastolic}${item.unit || ''}`
+  }
+  return `${item.value}${item.unit || ''}`
+}
+
+const formatRemark = (item) => item.remark || ''
 
 onMounted(() => {
   loadList()

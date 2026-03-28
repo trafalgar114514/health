@@ -18,10 +18,17 @@ public class HealthRecordService {
 
     public void addRecord(HealthRecordDTO dto) {
         HealthRecord record = new HealthRecord();
+        boolean isBloodPressure = "血压".equals(dto.getType());
+
+        if (isBloodPressure && (dto.getSystolic() == null || dto.getDiastolic() == null)) {
+            throw new IllegalArgumentException("血压记录必须包含收缩压和舒张压");
+        }
 
         record.setUserId(dto.getUserId());
         record.setType(dto.getType());
-        record.setValue(dto.getValue());
+        record.setValue(isBloodPressure ? dto.getSystolic() : dto.getValue());
+        record.setSystolic(dto.getSystolic());
+        record.setDiastolic(dto.getDiastolic());
         record.setUnit(dto.getUnit());
         record.setRecordDate(LocalDate.parse(dto.getRecordDate()));
         record.setRemark(dto.getRemark());
