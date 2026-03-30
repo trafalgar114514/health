@@ -32,7 +32,7 @@
         type="line"
         canvas2d
         canvas-id="bpTrendChart"
-        :opts="opts"
+        :opts="bpOpts"
         :chartData="bpChartData"
         style="width: 100%; height: 300px;"
       />
@@ -43,7 +43,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getTrendApi } from '@/api/health'
+import { getHealthListApi, getTrendApi } from '@/api/health'
 
 const createEmptyChartData = () => ({
   categories: [],
@@ -77,18 +77,80 @@ const opts = {
   }
 }
 
+const bpOpts = {
+  padding: [15, 15, 0, 5],
+  enableScroll: false,
+  legend: {
+    show: true
+  },
+  xAxis: {
+    disableGrid: true,
+    rotateLabel: true
+  },
+  yAxis: {
+    gridType: 'dash',
+    dashLength: 2
+  },
+  extra: {
+    line: {
+      type: 'straight',
+      width: 2
+    }
+  }
+}
+
 const normalizeTrendList = (res) => {
   if (Array.isArray(res)) return res
   if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.data?.data)) return res.data.data
+  if (Array.isArray(res?.data?.list)) return res.data.list
   return []
+}
+
+const parseBpValue = (item) => {
+  if (
+    item.systolic !== null &&
+    item.systolic !== undefined &&
+    item.diastolic !== null &&
+    item.diastolic !== undefined
+  ) {
+    return {
+      high: Number(item.systolic),
+      low: Number(item.diastolic)
+    }
+  }
+
+  const str = String(item.value || '').trim()
+  const match = str.match(/(\d+)\s*\/\s*(\d+)/)
+
+  if (match) {
+    return {
+      high: Number(match[1]),
+      low: Number(match[2])
+    }
+  }
+
+  const num = Number(str)
+  if (!Number.isNaN(num)) {
+    return {
+      high: num,
+      low: null
+    }
+  }
+
+  return {
+    high: null,
+    low: null
+  }
 }
 
 const loadSingleTrend = async (userId, type, name) => {
   const res = await getTrendApi(userId, type)
   const arr = normalizeTrendList(res)
+  const getDate = (item) => item.record_date || item.recordDate || ''
 
   return {
-    categories: arr.map(item => item.record_date),
+    categories: arr.map(item => String(getDate(item)).slice(0, 10)),
     series: [
       {
         name,
@@ -99,48 +161,66 @@ const loadSingleTrend = async (userId, type, name) => {
 }
 
 const loadBpTrend = async (userId) => {
-  const res = await getTrendApi(userId, '血压')
-  const arr = normalizeTrendList(res)
+  const [systolicRes, diastolicRes] = await Promise.all([
+    getTrendApi(userId, '收缩压'),
+    getTrendApi(userId, '舒张压')
+  ])
 
-  const categories = arr.map(item => item.record_date)
+  const systolicList = normalizeTrendList(systolicRes)
+  const diastolicList = normalizeTrendList(diastolicRes)
 
-  const highData = arr.map(item => {
-    if (typeof item.value === 'string' && item.value.includes('/')) {
-      return Number(item.value.split('/')[0])
+  const getDate = (item) => item.record_date || item.recordDate || ''
+
+  const dateMap = {}
+
+  systolicList.forEach(item => {
+    const date = String(getDate(item)).slice(0, 10)
+    const value = Number(item.value)
+    if (!date || Number.isNaN(value)) return
+
+    if (!dateMap[date]) {
+      dateMap[date] = {
+        systolic: null,
+        diastolic: null
+      }
     }
-    return Number(item.value)
+    dateMap[date].systolic = value
   })
 
-  const lowData = arr.map(item => {
-    if (typeof item.value === 'string' && item.value.includes('/')) {
-      return Number(item.value.split('/')[1])
+  diastolicList.forEach(item => {
+    const date = String(getDate(item)).slice(0, 10)
+    const value = Number(item.value)
+    if (!date || Number.isNaN(value)) return
+
+    if (!dateMap[date]) {
+      dateMap[date] = {
+        systolic: null,
+        diastolic: null
+      }
     }
-    return null
+    dateMap[date].diastolic = value
   })
 
-  const hasLow = lowData.some(v => v !== null && !Number.isNaN(v))
+  const categories = Object.keys(dateMap).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  )
 
   return {
     categories,
-    series: hasLow
-      ? [
-          {
-            name: '收缩压',
-            data: highData
-          },
-          {
-            name: '舒张压',
-            data: lowData
-          }
-        ]
-      : [
-          {
-            name: '血压',
-            data: highData
-          }
-        ]
+    series: [
+      {
+        name: '收缩压',
+        data: categories.map(date => dateMap[date].systolic)
+      },
+      {
+        name: '舒张压',
+        data: categories.map(date => dateMap[date].diastolic)
+      }
+    ]
   }
 }
+
+
 
 const loadTrend = async () => {
   const userId = 1
@@ -171,6 +251,11 @@ const loadTrend = async () => {
 
     if (results.some(item => item.status === 'rejected')) {
       console.log('失败详情=', results)
+      console.log('体重结果=', results[0])
+      console.log('身高结果=', results[1])
+      console.log('血压结果=', results[2])
+      console.log('血压失败原因=', results[2]?.reason)
+    
       uni.showToast({
         title: '部分趋势加载失败',
         icon: 'none'
@@ -186,7 +271,9 @@ const loadTrend = async () => {
 }
 
 const goBack = () => {
-  uni.navigateBack()
+  uni.switchTab({
+    url: '/pages/index/index'
+  })
 }
 
 onShow(() => {
