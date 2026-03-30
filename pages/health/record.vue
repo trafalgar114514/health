@@ -39,6 +39,16 @@ const unitMap = {
   血压: 'mmHg'
 }
 
+const getToday = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = `${now.getMonth() + 1}`.padStart(2, '0')
+  const day = `${now.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const today = getToday()
+
 const form = reactive({
   userId: userInfo.id || '',
   type: '',
@@ -50,16 +60,17 @@ const form = reactive({
   remark: ''
 })
 
-const getToday = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = `${now.getMonth() + 1}`.padStart(2, '0')
-  const day = `${now.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const today = getToday()
 const typeIndex = computed(() => typeOptions.findIndex((item) => item === form.type))
+
+const resetForm = () => {
+  form.type = ''
+  form.value = ''
+  form.systolic = ''
+  form.diastolic = ''
+  form.unit = ''
+  form.recordDate = ''
+  form.remark = ''
+}
 
 const handleTypeChange = (e) => {
   const index = Number(e.detail.value)
@@ -74,6 +85,14 @@ const handleDateChange = (e) => {
   form.recordDate = e.detail.value
 }
 
+const addHealthRecord = (data) => {
+  return request({
+    url: '/health/add',
+    method: 'POST',
+    data
+  })
+}
+
 const handleSubmit = async () => {
   if (!form.userId) {
     uni.showToast({
@@ -83,50 +102,80 @@ const handleSubmit = async () => {
     return
   }
 
-  const isBp = form.type === '血压'
-  const isNormalTypeValid = !isBp && form.value
-  const isBpValid = isBp && form.systolic && form.diastolic
-
-  if (!form.type || !(isNormalTypeValid || isBpValid) || !form.recordDate) {
+  if (!form.type) {
     uni.showToast({
-      title: '请填写完整信息',
+      title: '请选择类型',
+      icon: 'none'
+    })
+    return
+  }
+
+  if (!form.recordDate) {
+    uni.showToast({
+      title: '请选择日期',
       icon: 'none'
     })
     return
   }
 
   try {
-    const res = await request({
-      url: '/health/add',
-      method: 'POST',
-      data: {
+    if (form.type === '血压') {
+      if (!form.systolic || !form.diastolic) {
+        uni.showToast({
+          title: '请输入收缩压和舒张压',
+          icon: 'none'
+        })
+        return
+      }
+
+      await addHealthRecord({
+        userId: form.userId,
+        type: '收缩压',
+        value: Number(form.systolic),
+        unit: 'mmHg',
+        recordDate: form.recordDate,
+        remark: form.remark
+      })
+
+      await addHealthRecord({
+        userId: form.userId,
+        type: '舒张压',
+        value: Number(form.diastolic),
+        unit: 'mmHg',
+        recordDate: form.recordDate,
+        remark: form.remark
+      })
+    } else {
+      if (!form.value) {
+        uni.showToast({
+          title: '请输入数值',
+          icon: 'none'
+        })
+        return
+      }
+
+      await addHealthRecord({
         userId: form.userId,
         type: form.type,
-        value: Number(isBp ? form.systolic : form.value),
-        systolic: isBp ? Number(form.systolic) : null,
-        diastolic: isBp ? Number(form.diastolic) : null,
+        value: Number(form.value),
         unit: unitMap[form.type] || form.unit,
         recordDate: form.recordDate,
         remark: form.remark
-      }
+      })
+    }
+
+    uni.showToast({
+      title: '提交成功',
+      icon: 'success'
     })
 
-    if (res.code === 200) {
-      uni.showToast({
-        title: '提交成功',
-        icon: 'success'
-      })
-
-      form.type = ''
-      form.value = ''
-      form.systolic = ''
-      form.diastolic = ''
-      form.unit = ''
-      form.recordDate = ''
-      form.remark = ''
-    }
+    resetForm()
   } catch (e) {
     console.log('提交失败', e)
+    uni.showToast({
+      title: '提交失败',
+      icon: 'none'
+    })
   }
 }
 </script>
