@@ -15,7 +15,16 @@
     </view>
 
     <view class="card">
-      <view class="menu" @click="showDev">健康档案</view>
+      <view class="section-title">用户档案</view>
+      <view class="item"><text>年龄</text><text>{{ profile.age || '-' }}</text></view>
+      <view class="item"><text>高血压家族史</text><text>{{ profile.family.hypertension ? '有' : '无' }}</text></view>
+      <view class="item"><text>糖尿病家族史</text><text>{{ profile.family.diabetes ? '有' : '无' }}</text></view>
+      <view class="item"><text>心脏病家族史</text><text>{{ profile.family.heartDisease ? '有' : '无' }}</text></view>
+      <view class="item"><text>免疫系统疾病家族史</text><text>{{ profile.family.immuneDisease ? '有' : '无' }}</text></view>
+    </view>
+
+    <view class="card">
+      <view class="menu" @click="showDev">健康档案详情</view>
       <view class="menu" @click="showDev">家庭成员管理</view>
       <view class="menu" @click="showDev">消息中心</view>
       <view class="menu logout" @click="logout">退出登录</view>
@@ -34,10 +43,28 @@ const userInfo = reactive({
   nickname: ''
 })
 
+const profile = reactive({
+  age: '',
+  family: {
+    hypertension: false,
+    diabetes: false,
+    heartDisease: false,
+    immuneDisease: false
+  }
+})
+
 const firstWord = computed(() => {
   const text = userInfo.nickname || userInfo.username || 'U'
   return text.slice(0, 1)
 })
+
+const loadProfile = () => {
+  if (!userInfo.id) return
+  const data = uni.getStorageSync(`user_profile_${userInfo.id}`)
+  if (!data) return
+  profile.age = data.age || ''
+  profile.family = { ...profile.family, ...(data.family || {}) }
+}
 
 const loadUserInfo = async () => {
   const cacheUser = getUserInfo()
@@ -68,8 +95,9 @@ const logout = () => {
   })
 }
 
-onMounted(() => {
-  loadUserInfo()
+onMounted(async () => {
+  await loadUserInfo()
+  loadProfile()
 })
 </script>
 
@@ -116,6 +144,12 @@ onMounted(() => {
   font-size: 24rpx;
   color: #999;
   margin-top: 8rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 12rpx;
 }
 
 .item,
