@@ -7,7 +7,7 @@
     </view>
 
     <view class="card">
-      <view class="section-title">基本信息与最近健康数据</view>
+      <view class="section-title">基本信息</view>
       <input v-model="form.age" class="input" placeholder="年龄" type="number" :disabled="!isFirstAssessment" />
 
       <template v-if="isFirstAssessment || !autoDataReady.heightWeight">
@@ -29,13 +29,19 @@
     <view class="card">
       <view class="section-title">生活习惯问卷</view>
       <picker :range="exerciseOptions" :value="exerciseIndex" @change="onExerciseChange" class="picker">
-        <view class="picker-value">每周运动次数：{{ form.exercise || '请选择' }}</view>
+        <view class="picker-value">最近一周运动次数：{{ form.exercise || '请选择' }}</view>
       </picker>
       <picker :range="sleepOptions" :value="sleepIndex" @change="onSleepChange" class="picker">
-        <view class="picker-value">日均睡眠时长：{{ form.sleep || '请选择' }}</view>
+        <view class="picker-value">最近一周平均睡眠时长：{{ form.sleep || '请选择' }}</view>
       </picker>
-      <picker :range="saltOptions" :value="saltIndex" @change="onSaltChange" class="picker">
-        <view class="picker-value">饮食口味：{{ form.salt || '请选择' }}</view>
+      <picker :range="dietOptions" :value="dietIndex" @change="onDietChange" class="picker">
+        <view class="picker-value">最近饮食口味（偏咸/偏油）：{{ form.diet || '请选择' }}</view>
+      </picker>
+      <picker :range="lateNightOptions" :value="lateNightIndex" @change="onLateNightChange" class="picker">
+        <view class="picker-value">最近是否熬夜：{{ form.lateNight || '请选择' }}</view>
+      </picker>
+      <picker :range="stressOptions" :value="stressIndex" @change="onStressChange" class="picker">
+        <view class="picker-value">最近是否压力大：{{ form.stress || '请选择' }}</view>
       </picker>
     </view>
 
@@ -93,7 +99,9 @@ const familyItems = [
 
 const exerciseOptions = ['0 次', '1 次', '2 次', '3 次及以上']
 const sleepOptions = ['< 6 小时', '6-8 小时', '> 8 小时']
-const saltOptions = ['清淡', '适中', '偏咸']
+const dietOptions = ['清淡少油', '偏咸', '偏油', '偏咸且偏油']
+const lateNightOptions = ['几乎不熬夜', '偶尔熬夜', '经常熬夜']
+const stressOptions = ['压力较小', '压力中等', '压力较大']
 
 const form = reactive({
   age: '',
@@ -103,7 +111,9 @@ const form = reactive({
   dbp: '',
   exercise: '',
   sleep: '',
-  salt: '',
+  diet: '',
+  lateNight: '',
+  stress: '',
   family: {
     hypertension: false,
     diabetes: false,
@@ -118,7 +128,9 @@ const autoDataReady = reactive({ heightWeight: false, bp: false })
 
 const exerciseIndex = computed(() => exerciseOptions.findIndex((item) => item === form.exercise))
 const sleepIndex = computed(() => sleepOptions.findIndex((item) => item === form.sleep))
-const saltIndex = computed(() => saltOptions.findIndex((item) => item === form.salt))
+const dietIndex = computed(() => dietOptions.findIndex((item) => item === form.diet))
+const lateNightIndex = computed(() => lateNightOptions.findIndex((item) => item === form.lateNight))
+const stressIndex = computed(() => stressOptions.findIndex((item) => item === form.stress))
 
 const getProfileKey = () => `user_profile_${userInfo.id || 'guest'}`
 const toNumber = (value) => Number(value || 0)
@@ -137,8 +149,16 @@ const onSleepChange = (e) => {
   form.sleep = sleepOptions[Number(e.detail.value)]
 }
 
-const onSaltChange = (e) => {
-  form.salt = saltOptions[Number(e.detail.value)]
+const onDietChange = (e) => {
+  form.diet = dietOptions[Number(e.detail.value)]
+}
+
+const onLateNightChange = (e) => {
+  form.lateNight = lateNightOptions[Number(e.detail.value)]
+}
+
+const onStressChange = (e) => {
+  form.stress = stressOptions[Number(e.detail.value)]
 }
 
 const onFamilyChange = (key, e) => {
@@ -201,7 +221,7 @@ const validateForm = () => {
     return '请完成基本信息与健康数据'
   }
 
-  if (!form.exercise || !form.sleep || !form.salt) {
+  if (!form.exercise || !form.sleep || !form.diet || !form.lateNight || !form.stress) {
     return '请完成生活习惯问卷'
   }
 
@@ -235,8 +255,15 @@ const evaluate = () => {
   if (form.sleep === '< 6 小时') lifestyleScore += 24
   else if (form.sleep === '> 8 小时') lifestyleScore += 8
 
-  if (form.salt === '偏咸') lifestyleScore += 18
-  else if (form.salt === '适中') lifestyleScore += 8
+  if (form.diet === '偏咸') lifestyleScore += 14
+  else if (form.diet === '偏油') lifestyleScore += 14
+  else if (form.diet === '偏咸且偏油') lifestyleScore += 24
+
+  if (form.lateNight === '偶尔熬夜') lifestyleScore += 10
+  else if (form.lateNight === '经常熬夜') lifestyleScore += 20
+
+  if (form.stress === '压力中等') lifestyleScore += 8
+  else if (form.stress === '压力较大') lifestyleScore += 18
 
   const metabolicScore = Math.min(95, 20 + familyCount * 14 + (bmi >= 24 ? 8 : 0) + (sbp >= 130 || dbp >= 85 ? 6 : 0))
 
@@ -255,7 +282,27 @@ const evaluate = () => {
     reasons.push(`每周运动 ${form.exercise.replace(' 次及以上', '+ 次')}，达到或接近推荐频率。`)
   }
 
-  reasons.push(form.salt === '偏咸' ? '日常饮食偏咸，长期可能增加血压相关风险。' : '饮食盐分控制较好，对血压风险更友好。')
+  if (form.diet === '偏咸' || form.diet === '偏咸且偏油') {
+    reasons.push('最近饮食偏咸，长期可能增加血压相关风险。')
+  } else if (form.diet === '偏油') {
+    reasons.push('最近饮食偏油，可能增加体重与代谢负担。')
+  } else {
+    reasons.push('最近饮食相对清淡少油，对心血管风险控制更有利。')
+  }
+
+  if (form.sleep === '< 6 小时') {
+    reasons.push('最近一周平均睡眠不足 6 小时，恢复不足会抬升生活方式风险。')
+  } else {
+    reasons.push(`最近一周平均睡眠 ${form.sleep}，睡眠维度整体可控。`)
+  }
+
+  if (form.lateNight === '经常熬夜') reasons.push('最近经常熬夜，会显著增加血压和代谢波动风险。')
+  else if (form.lateNight === '偶尔熬夜') reasons.push('最近存在偶尔熬夜，建议尽量固定作息。')
+  else reasons.push('最近几乎不熬夜，作息较规律。')
+
+  if (form.stress === '压力较大') reasons.push('近期主观压力较大，可能影响睡眠与心血管稳定性。')
+  else if (form.stress === '压力中等') reasons.push('近期压力中等，建议持续关注情绪与放松管理。')
+  else reasons.push('近期压力较小，有助于维持健康状态。')
 
   if (sbp < 130 && dbp < 85) reasons.push(`当前血压 ${sbp}/${dbp} mmHg，处于正常范围。`)
   else reasons.push(`当前血压 ${sbp}/${dbp} mmHg，已偏高，需连续监测。`)
